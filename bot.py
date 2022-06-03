@@ -3,7 +3,6 @@
 
 import os
 import asyncio
-from pdb import post_mortem
 import asyncpraw
 import discord
 import aiohttp
