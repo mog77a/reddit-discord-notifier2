@@ -64,7 +64,7 @@ async def webhook_coroutine(post):
             os.environ['DISCORD_WEBHOOK'], adapter=discord.AsyncWebhookAdapter(session))
 
         sub = f"{post.subreddit}"
-        title = f"{post.title}"
+        title = f"({sub}){post.title}"
         title = title[0:100]
         title = urllib.parse.quote(title)
         message = f"Hello!\nI am interested in buying delete_and_type_inquiry_here_dont_forget_title\n\nMy Paypal for an invoice request through [Paypal goods and services](https://www.paypal.com/myaccount/transfer/homepage/request) is:\n{PAYPAL_EMAIL}\n\n\nShipping address is handled through Paypal.\n\nThanks!"
