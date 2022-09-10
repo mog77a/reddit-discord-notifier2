@@ -84,10 +84,10 @@ async def webhook_coroutine(post):
 
         if (sub == 'hardwareswap'):
             embed = discord.Embed(title=post.title, url=url,
-                                  color=randColor, description=description, timestamp=datetime.datetime.now())
+                                  color=randColor, description=description, timestamp=datetime.datetime.utcnow())
         else:
             embed = discord.Embed(title=post.title, url=post.url,
-                                  color=randColor, description=description, timestamp=datetime.datetime.now())
+                                  color=randColor, description=description, timestamp=datetime.datetime.utcnow())
 
         embed.set_thumbnail(url=icon_url)
         embed.set_author(name=f"r/{post.subreddit}")
