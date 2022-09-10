@@ -1,6 +1,7 @@
 # For hosting on Heroku we'll need to use the OS library to pull the Token
 # from the Enviroment Variables
 
+from dotenv import load_dotenv
 import os
 import asyncio
 import asyncpraw
@@ -10,9 +11,12 @@ import psycopg2
 import datetime
 import urllib.parse
 from discord.ext import commands
+import logging
 import random
 
-from dotenv import load_dotenv
+root = logging.getLogger()
+root.setLevel(logging.INFO)
+
 load_dotenv()
 
 
@@ -35,13 +39,13 @@ for k, v in keyword_filter.items():
     keyword_filter[k]['filter'] = [x.lower()
                                    for x in keyword_filter[k]['filter']]
 
+totp_available = False
+
 PAYPAL_EMAIL = os.environ['PAYPAL_EMAIL']
 token = os.environ['DISCORDBOT_TOKEN']
 DATABASE_URL = os.environ['DATABASE_URL']
 channelid = os.environ['CHANNEL_ID']
 bot = commands.Bot(command_prefix="!")
-username = os.environ['BOTONE_USERNAME']
-password = os.environ['BOTONE_PASSWORD']
 client_id = os.environ['BOTONE_ID']
 client_secret = os.environ['BOTONE_SECRET']
 user_agent = os.environ['BOTONE_AGENT']
@@ -49,10 +53,8 @@ user_agent = os.environ['BOTONE_AGENT']
 
 reddit = asyncpraw.Reddit(client_id=client_id,
                           client_secret=client_secret,
-                          password=password,
-                          username=username,
-                          user_agent=user_agent,
-                          read_only=True,)
+                          refresh_token=os.environ['BOTONE_REFRESH'],
+                          user_agent=user_agent)
 
 
 async def webhook_coroutine(post):
@@ -173,10 +175,11 @@ async def database_post_check(post):
 
 async def ScrapePosts(subreddits, reddit, num_posts_toLoad=len(subs) * 1):
     posts = []
-
+    # print(await reddit.user.me())
     try:
 
         reddits = await reddit.subreddit(subreddits)
+        print(reddits)
 
         # checks for any new post
         async for submission in reddits.new(limit=num_posts_toLoad):

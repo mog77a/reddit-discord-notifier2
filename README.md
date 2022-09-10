@@ -2,6 +2,10 @@ Forked and updated from https://github.com/eightants/reddit-post-alerts because 
 
 The guide below is still applicable but many things have changed and been updated and I'm way too lazy to rewrite it. Praise [eightants](https://github.com/eightants) for the impecable documentation!
 
+Oauth token generator: Generate a token for your bot [here](https://not-an-aardvark.github.io/reddit-oauth-helper/). This is needed to sidestep any 2 factor you have on your account.
+
+If that doesn't work anymore set the default redirect to http://127.0.0.1:8080 and set up the praw.ini with a your client_id and client_secret.use the script get_redirect_token.py.  You can go ahead and select all scopes with '\*'.
+
 Slash commands are also pain so you need to push stuff to update the configs.
 
 # Reddit Post Alerts
@@ -12,7 +16,7 @@ This project uses the Discord and Reddit bot APIs to find new posts in subreddit
 
 There are four components that make up this bot: the Python scripts, the Reddit app, the Discord app, and Heroku for hosting. The Python scripts are all provided in this repository and changing the subreddit and keyword variables will provide the customization. The other parts of this project need to be set up by the user.
 
-To ensure that the bot can watch for new posts on the subreddits specified, we need a Reddit bot. Visit [https://www.reddit.com/prefs/apps/](https://www.reddit.com/prefs/apps/) and select Create App. The app will be a script, name it anything you want and set the redirect uri to a default `http://127.0.0.1`.
+To ensure that the bot can watch for new posts on the subreddits specified, we need a Reddit bot. Visit [https://www.reddit.com/prefs/apps/](https://www.reddit.com/prefs/apps/) and select Create App. The app will be a script, name it anything you want and set the redirect uri to a default `https://not-an-aardvark.github.io/reddit-oauth-helper/`.
 
 The Reddit bot has been created, and now we should set up our Discord bot. Head to [http://discordapp.com/developers/applications](http://discordapp.com/developers/applications) and login to your Discord account. Select New Application and give your app a name. Now, navigate to the Bot tab on the left, and select Add Bot.
 
