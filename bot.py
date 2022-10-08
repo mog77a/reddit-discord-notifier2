@@ -125,34 +125,33 @@ async def check_posts(posts):
     try:
         print(F"{datetime.datetime.now()}: Checking for posts in database")
         post_ids_exist = await database_multiple_post_check(posts)
-    except Exception as e:
-        print(e)
+        for p in posts:
+           # check if post exists in the database
+            if post_ids_exist[p.id] is False:
+                # check global filter enable
+                if global_filter_enable:
+                    sub = f"{p.subreddit}"
+                    # check the individual subreddit filter enable
+                    if keyword_filter[sub]['enabled']:
+                        # check if the post contains any of the keywords
+                        if any(x in p.title.lower() for x in keyword_filter[sub]['filter']):
+                            print(
+                                f"{datetime.datetime.now()}: Match found in r/{sub}: {p.title}")
+                            await webhook_coroutine(p)
+                        elif any(x in p.selftext.lower() for x in keyword_filter[sub]['filter']):
+                            print(
+                                f"{datetime.datetime.now()}: Match found in r/{sub}: {p.title}")
+                            await webhook_coroutine(p)
 
-    for p in posts:
-       # check if post exists in the database
-        if post_ids_exist[p.id] is False:
-            # check global filter enable
-            if global_filter_enable:
-                sub = f"{p.subreddit}"
-                # check the individual subreddit filter enable
-                if keyword_filter[sub]['enabled']:
-                    # check if the post contains any of the keywords
-                    if any(x in p.title.lower() for x in keyword_filter[sub]['filter']):
-                        print(
-                            f"{datetime.datetime.now()}: Match found in r/{sub}: {p.title}")
-                        await webhook_coroutine(p)
-                    elif any(x in p.selftext.lower() for x in keyword_filter[sub]['filter']):
-                        print(
-                            f"{datetime.datetime.now()}: Match found in r/{sub}: {p.title}")
+                    else:
                         await webhook_coroutine(p)
 
                 else:
                     await webhook_coroutine(p)
-
             else:
-                await webhook_coroutine(p)
-        else:
-            print(F"{datetime.datetime.now()}: No new posts found")
+                print(F"{datetime.datetime.now()}: No new posts found")
+    except Exception as e:
+        print(e)
 
 
 async def database_post_check(post):
