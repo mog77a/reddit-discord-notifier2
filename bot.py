@@ -47,7 +47,8 @@ PAYPAL_EMAIL = os.environ['PAYPAL_EMAIL']
 token = os.environ['DISCORDBOT_TOKEN']
 DATABASE_URL = os.environ['DATABASE_URL']
 channelid = os.environ['CHANNEL_ID']
-bot = commands.Bot(command_prefix="!")
+# bot = commands.Bot(command_prefix="!")
+bot = discord.Client(intents=discord.Intents.default())
 client_id = os.environ['BOTONE_ID']
 client_secret = os.environ['BOTONE_SECRET']
 user_agent = os.environ['BOTONE_AGENT']
@@ -63,7 +64,7 @@ async def webhook_coroutine(post):
     async with aiohttp.ClientSession() as session:
         # create an async session with a webhook
         webhook = discord.Webhook.from_url(
-            os.environ['DISCORD_WEBHOOK'], adapter=discord.AsyncWebhookAdapter(session))
+            os.environ['DISCORD_WEBHOOK'], session=session)
 
         sub = f"{post.subreddit}"
         discord_title = f"(r/{sub}){post.title}"
@@ -190,49 +191,54 @@ async def database_multiple_post_check(posts):
     ''' Checks if the multiple posts are in the database and returns a true/false value for each post
         If false insert the post id into the database and remove any posts older than 1 day'''
 
-    # Dictionary to hold the post id and a boolean value if it exists in the database
-    post_ids_exist = {post.id: True for post in posts}
+    try:
+        # Dictionary to hold the post id and a boolean value if it exists in the database
+        post_ids_exist = {post.id: True for post in posts}
 
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-    # Creating a cursor (a DB cursor is an abstraction, meant for data set traversal)
-    cur = conn.cursor()
+        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+        # Creating a cursor (a DB cursor is an abstraction, meant for data set traversal)
+        cur = conn.cursor()
 
-    # values constructor
-    string2 = ", ".join(f"('{x}')" for x in post_ids_exist)
-
-    # Query that returns missing ids in database
-    select_query = f"(WITH v(id) as (VALUES{string2}) select v.id from v left join redditpostalerts i on i.post_id = v.id where i.post_id is null);"
-
-    cur.execute(select_query)
-    missing_ids = cur.fetchall()
-
-    # update the database with missing ids
-    if missing_ids:
-        # unwrap the tuples in list
-        missing_ids = [x[0] for x in missing_ids]
         # values constructor
-        string = ", ".join(f"('{x}')" for x in missing_ids)
+        string2 = ", ".join(f"('{x}')" for x in post_ids_exist)
 
-        # insert missing ids into database
-        insert_query = f"INSERT INTO redditpostalerts (post_id) VALUES {string};"
-        cur.execute(insert_query)
+        # Query that returns missing ids in database
+        select_query = f"(WITH v(id) as (VALUES{string2}) select v.id from v left join redditpostalerts i on i.post_id = v.id where i.post_id is null);"
 
-        # set the missings id values to false
-        for id in missing_ids:
-            post_ids_exist[id] = False
+        cur.execute(select_query)
+        missing_ids = cur.fetchall()
 
-    # remove posts older than 1 day
-    delete_older_than_1_day_query = "DELETE FROM redditpostalerts WHERE timestamp < NOW() - INTERVAL '1 DAY';"
-    cur.execute(delete_older_than_1_day_query)
+        # update the database with missing ids
+        if missing_ids:
+            # unwrap the tuples in list
+            missing_ids = [x[0] for x in missing_ids]
+            # values constructor
+            string = ", ".join(f"('{x}')" for x in missing_ids)
 
-    # In order to make the changes to the database permanent, we now commit our changes
-    conn.commit()
+            # insert missing ids into database
+            insert_query = f"INSERT INTO redditpostalerts (post_id) VALUES {string};"
+            cur.execute(insert_query)
 
-    # We have committed the necessary changes and can now close out our connection
-    cur.close()
-    conn.close()
+            # set the missings id values to false
+            for id in missing_ids:
+                post_ids_exist[id] = False
 
-    return post_ids_exist
+        # remove posts older than 1 day
+        delete_older_than_1_day_query = "DELETE FROM redditpostalerts WHERE timestamp < NOW() - INTERVAL '1 DAY';"
+        cur.execute(delete_older_than_1_day_query)
+
+        # In order to make the changes to the database permanent, we now commit our changes
+        conn.commit()
+    except Exception as e:
+        print(e)
+    finally:
+
+
+        # We have committed the necessary changes and can now close out our connection
+        cur.close()
+        conn.close()
+
+        return post_ids_exist
 
 
 async def ScrapePosts(subreddits, reddit, num_posts_toLoad=len(subs) * 1):
@@ -240,12 +246,17 @@ async def ScrapePosts(subreddits, reddit, num_posts_toLoad=len(subs) * 1):
     # print(await reddit.user.me())
     try:
 
-        reddits = await reddit.subreddit(subreddits)
-        print(reddits)
+        async with asyncpraw.Reddit(client_id=client_id,
+                                    client_secret=client_secret,
+                                    refresh_token=os.environ['BOTONE_REFRESH'],
+                                    user_agent=user_agent) as reddit:
 
-        # checks for any new post
-        async for submission in reddits.new(limit=num_posts_toLoad):
-            posts.append(submission)
+            reddits = await reddit.subreddit(subreddits)
+            print(reddits)
+
+            # checks for any new post
+            async for submission in reddits.new(limit=num_posts_toLoad):
+                posts.append(submission)
 
     except Exception as e:
         print("ScrapeError, Function input: {0} | {1}".format(subs, e))
